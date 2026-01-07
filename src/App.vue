@@ -15,19 +15,15 @@
             <input v-model.number="zoomPercent" @input="onZoomInput" type="range" min="50" max="300" style="width:140px" :disabled="!pdf" />
             <div style="min-width:54px;text-align:center">{{ Math.round((scale||autoScale)*100) }}%</div>
 
-            <div style="width:1px;background:#e5e7eb;height:24px;margin:0 8px"></div>
-
-            <button @click="rotateLeft" :disabled="!pdf">旋转 -90°</button>
-            <button @click="rotateRight" :disabled="!pdf">旋转 +90°</button>
-
-            <div style="width:1px;background:#e5e7eb;height:24px;margin:0 8px"></div>
+        
 
             <div style="margin-left:8px">第</div>
-            <input type="number" v-model.number="pageInput" @keyup.enter="gotoPage" :min="1" :max="numPages" style="width:80px;margin-left:4px" />
+            <input type="number" v-model.number="pageInput" :min="1" :max="numPages" style="width:80px;margin-left:4px" />
+            <button @click="gotoPage" :disabled="!pdf">跳转</button>
             <div style="margin-left:4px">/ {{ numPages || 0 }} 页</div>
           </div>
       <div class="viewer">
-        <PdfViewer :file="file" :page="page" @loaded="onLoaded" />
+        <PdfViewer :file="file" :page="page" :scale="scale" @loaded="onLoaded" />
       </div>
     </div>
   </div>
@@ -46,7 +42,6 @@ const pageInput = ref(1)
 
 // scale: null means auto fit-to-width; otherwise a numeric scale (e.g. 1.25)
 const scale = ref(null)
-const rotation = ref(0)
 const zoomPercent = ref(100)
 const autoScale = 1 // placeholder for display when scale is null; PdfViewer computes fit when scale is null
 
@@ -55,7 +50,6 @@ function onFileSelected(f){
   page.value = 1
   pageInput.value = 1
   scale.value = null
-  rotation.value = 0
   zoomPercent.value = 100
 }
 
@@ -83,8 +77,7 @@ function zoomOut(){
 function onZoomInput(){
   scale.value = +(zoomPercent.value/100)
 }
-function rotateLeft(){ rotation.value = (rotation.value - 90) % 360 }
-function rotateRight(){ rotation.value = (rotation.value + 90) % 360 }
+// no rotation controls
 
 watch(page, (v)=>{/* page prop passed to PdfViewer */})
 </script>

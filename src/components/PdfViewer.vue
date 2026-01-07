@@ -12,8 +12,7 @@ import * as pdfjsLib from 'pdfjs-dist/build/pdf'
 const props = defineProps({
   file: File,
   page: { type: Number, default: 1 },
-  scale: { type: Number, default: null },
-  rotation: { type: Number, default: 0 }
+  scale: { type: Number, default: null }
 })
 const emit = defineEmits(['loaded'])
 
@@ -38,21 +37,21 @@ async function renderPage(pageNum){
   if(currentRenderTask){ try{ currentRenderTask.cancel() }catch(e){} }
   const pageObj = await pdfDoc.getPage(pageNum)
 
-  // compute desired scale: if props.scale is null, compute fit-to-width
+  // compute desired scale: if props.scale is null, compute fit-to-container (both width and height)
   let desiredScale = props.scale
 
-  // get a 1.0 viewport (no scaling) to measure page dimensions with rotation
-  const unscaledViewport = pageObj.getViewport({ scale: 1, rotation: props.rotation || 0 })
+  // get a 1.0 viewport (no scaling) to measure page dimensions
+  const unscaledViewport = pageObj.getViewport({ scale: 1 })
 
   if(!desiredScale){
-    // compute available width from parent container
+    // compute available width from parent container and fit to width (keeps larger display)
     const container = canvas.value && canvas.value.parentElement
     const availableWidth = (container && container.clientWidth) ? container.clientWidth : unscaledViewport.width
     desiredScale = availableWidth / unscaledViewport.width
   }
 
   const outputScale = window.devicePixelRatio || 1
-  const renderViewport = pageObj.getViewport({ scale: desiredScale * outputScale, rotation: props.rotation || 0 })
+  const renderViewport = pageObj.getViewport({ scale: desiredScale * outputScale })
 
   const c = canvas.value
   c.width = Math.floor(renderViewport.width)
@@ -80,10 +79,6 @@ watch(()=>props.scale, (s)=>{
     // wait a tick to ensure layout updates when fitting
     nextTick().then(()=>renderPage(props.page))
   }
-})
-
-watch(()=>props.rotation, (r)=>{
-  if(pdfDoc) renderPage(props.page)
 })
 
 onBeforeUnmount(()=>{ if(fileUrl) URL.revokeObjectURL(fileUrl) })
