@@ -8,12 +8,10 @@
         <input ref="fileInput" type="file" accept="application/pdf" @change="onChange" style="display:none" />
         <button class="btn-primary" @click="onOpenPdf">打开PDF</button>
         <button class="btn-success" @click="emit('save-pdf-editable')">保存PDF（标注可编辑）</button>
-        <button class="btn-success" @click="emit('saveas-pdf-editable')">另存为PDF（标注可编辑）</button>
-        <button class="btn-success" @click="emit('save-pdf-final')">最终PDF保存（标注不可编辑）</button>
+        <button class="btn-success" @click="emit('save-pdf-final')">PDF保存（标注不可编辑）</button>
         <button class="btn-secondary" @click="emit('export-data')">导出数据</button>
         <button class="btn-secondary" @click="emit('undo-annotation')">撤销上一标注</button>
         <button class="btn-danger" @click="onClearPageAnnotations">清除本页标注</button>
-        <button class="btn-danger" @click="emit('delete-selected-annotation')">删除选中标注</button>
       </div>
     </div>
 
@@ -43,7 +41,6 @@
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <label style="min-width:70px">边框样式:</label>
             <label><input type="radio" value="none" v-model="borderStyle" /> 无</label>
-            <label><input type="radio" value="circle" v-model="borderStyle" /> 圆形</label>
             <label><input type="radio" value="rect" v-model="borderStyle" /> 矩形</label>
           </div>
         </div>
@@ -104,7 +101,7 @@ const increment = ref(1)
 const prefix = ref('GB')
 const suffix = ref('XX')
 const fontSize = ref(10)
-const borderStyle = ref('rect')
+const borderStyle = ref('none')
 const highDpi = ref(true)
 const pdfPath = ref('')
 const dataJson = ref('{}')

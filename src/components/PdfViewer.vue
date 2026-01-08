@@ -45,6 +45,8 @@ async function loadPdfFromFile(f){
   const loadingTask = pdfjsLib.getDocument(fileUrl)
   pdfDoc = await loadingTask.promise
   emit('loaded', { pdf: pdfDoc, numPages: pdfDoc.numPages })
+  // Wait for DOM layout to complete before rendering
+  await nextTick()
   await renderPage(props.page)
 }
 
@@ -162,8 +164,12 @@ function onWheel(e){
 function redrawAnnotations(){
   if(!canvas.value) return
   const ctx = canvas.value.getContext('2d')
-  const boxSize = Math.max(50, props.fontSize * 5)  // Annotation box size
+  // 增大基础大小，使边框更清晰可见
+  const baseBoxSize = props.fontSize * 6
+  const boxSize = baseBoxSize * (currentScale || 1)
   const devicePixelRatio = window.devicePixelRatio || 1
+  // 字体大小也需要随缩放调整
+  const fontSize = props.fontSize * (currentScale || 1)
   
   // Only draw annotations for current page
   const pageAnnotations = annotations.value[props.page] || []
@@ -176,7 +182,6 @@ function redrawAnnotations(){
     const text = props.prefix + (props.startNumber + ann.number * props.increment) + props.suffix
     
     if(ann.style === 'circle'){
-      // Draw circle
       ctx.strokeStyle = '#ff0000'
       ctx.lineWidth = 2
       ctx.beginPath()
@@ -185,19 +190,24 @@ function redrawAnnotations(){
       
       // Draw text inside circle
       ctx.fillStyle = '#ff0000'
-      ctx.font = `bold ${props.fontSize * devicePixelRatio}px Arial`
+      ctx.font = `bold ${fontSize * devicePixelRatio}px Arial`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillText(text, pixelX, pixelY)
     } else if(ann.style === 'rect'){
-      // Draw rectangle
+      // Calculate text width to fit rectangle
+      ctx.font = `bold ${fontSize * devicePixelRatio}px Arial`
+      const textWidth = ctx.measureText(text).width
+      const padding = fontSize * devicePixelRatio * 0.5
+      const rectWidth = textWidth + padding * 2
+      const rectHeight = boxSize
+      
       ctx.strokeStyle = '#ff0000'
       ctx.lineWidth = 2
-      ctx.strokeRect(pixelX - boxSize / 2, pixelY - boxSize / 2, boxSize, boxSize)
+      ctx.strokeRect(pixelX - rectWidth / 2, pixelY - rectHeight / 2, rectWidth, rectHeight)
       
       // Draw text inside rectangle
       ctx.fillStyle = '#ff0000'
-      ctx.font = `bold ${props.fontSize * devicePixelRatio}px Arial`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillText(text, pixelX, pixelY)
@@ -210,7 +220,7 @@ function redrawAnnotations(){
       
       // Draw text next to dot
       ctx.fillStyle = '#ff0000'
-      ctx.font = `bold ${props.fontSize * devicePixelRatio}px Arial`
+      ctx.font = `bold ${fontSize * devicePixelRatio}px Arial`
       ctx.textAlign = 'left'
       ctx.textBaseline = 'middle'
       ctx.fillText(text, pixelX + 8, pixelY)
@@ -222,23 +232,20 @@ function drawAnnotation(e){
   const canvasElement = canvas.value
   if(!canvasElement || pageWidth === 0) return
   
-  // Get canvas bounding rect (CSS coordinates)
+  // Get canvas bounding rect (CSS coordinates, includes transform)
   const canvasRect = canvasElement.getBoundingClientRect()
   
   // Mouse position in CSS coordinates relative to canvas
+  // getBoundingClientRect already includes CSS transform, so no need to subtract offset
   const mouseXCSS = e.clientX - canvasRect.left
   const mouseYCSS = e.clientY - canvasRect.top
-  
-  // Account for pan offset (which is applied via CSS transform)
-  const offsetX = mouseXCSS - offset.value.x
-  const offsetY = mouseYCSS - offset.value.y
   
   // Get device pixel ratio for proper scaling
   const devicePixelRatio = window.devicePixelRatio || 1
   
   // Convert CSS pixels to actual canvas pixels
-  const mouseXPixels = offsetX * devicePixelRatio
-  const mouseYPixels = offsetY * devicePixelRatio
+  const mouseXPixels = mouseXCSS * devicePixelRatio
+  const mouseYPixels = mouseYCSS * devicePixelRatio
   
   // Convert canvas pixels to PDF page coordinates
   // canvas pixels = PDF page size * current scale * device pixel ratio
@@ -286,8 +293,13 @@ function undoLastAnnotation(){
   }
 }
 
+function getAnnotations(){
+  return annotations.value
+}
+
 defineExpose({
   clearCurrentPageAnnotations,
-  undoLastAnnotation
+  undoLastAnnotation,
+  getAnnotations
 })
 </script>
