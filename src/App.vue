@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <div class="left">
-      <LeftPanel @file-selected="onFileSelected" @apply-settings="onApplySettings" @clear-page-annotations="onClearPageAnnotations" @undo-annotation="onUndoAnnotation" @save-pdf-editable="onSavePdfEditable" @save-pdf-final="onSavePdfFinal" />
+      <LeftPanel @file-selected="onFileSelected" @apply-settings="onApplySettings" @clear-page-annotations="onClearPageAnnotations" @undo-annotation="onUndoAnnotation" @save-pdf-editable="onSavePdfEditable" @save-pdf-final="onSavePdfFinal" @export-data="onExportData" />
     </div>
     <div class="right">
       <div class="controls">
@@ -47,6 +47,7 @@ import { ref, watch, computed } from 'vue'
 import LeftPanel from './components/LeftPanel.vue'
 import PdfViewer from './components/PdfViewer.vue'
 import { generatePdfWithAnnotations, downloadPdf } from './services/pdfGenerator'
+import { exportAnnotationsToExcel } from './services/exportData'
 
 const file = ref(null)
 const pdf = ref(null)
@@ -214,6 +215,31 @@ async function onSavePdfFinal(){
   } catch(error) {
     console.error('Failed to generate PDF:', error)
     alert('生成PDF失败: ' + error.message)
+  }
+}
+
+function onExportData(){
+  if(!pdfViewerRef.value || !fileName.value) {
+    alert('请先打开PDF文件')
+    return
+  }
+  
+  try {
+    const annotations = pdfViewerRef.value.getAnnotations()
+    exportAnnotationsToExcel(
+      annotations,
+      {
+        startNumber: startNumber.value,
+        increment: increment.value,
+        prefix: prefix.value,
+        suffix: suffix.value
+      },
+      fileName.value
+    )
+    alert('数据已导出')
+  } catch(error) {
+    console.error('Failed to export data:', error)
+    alert('导出数据失败: ' + error.message)
   }
 }
 
