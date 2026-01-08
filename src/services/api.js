@@ -2,7 +2,8 @@
  * API service for calling backend endpoints
  */
 
-const API_BASE_URL = process.env.VUE_APP_API_URL || 'http://localhost:8000'
+// Vite exposes env vars via import.meta.env; fall back to localhost if not set
+const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:8000'
 
 /**
  * Submit data and PDF path to backend
